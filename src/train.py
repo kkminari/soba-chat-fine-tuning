@@ -363,7 +363,7 @@ def train(config: dict):
 
         # SFT 설정
         dataset_text_field="text",          # chat template 적용된 텍스트 필드
-        max_seq_length=config["model"]["max_seq_length"],
+        max_length=config["model"]["max_seq_length"],
     )
 
     print(f"\n학습 설정:")

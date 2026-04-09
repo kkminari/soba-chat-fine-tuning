@@ -1,7 +1,7 @@
 # 파인튜닝 모델 교체 — 실행 추적 문서
 
-> 마지막 업데이트: 2026-04-09
-> 전체 진행률: **25 / 37 태스크 (68%)**
+> 마지막 업데이트: 2026-04-09 (실험 1 완료)
+> 전체 진행률: **27 / 37 태스크 (73%)**
 > 
 > **v2 (2026-04-09)**: Phase 2~4 전면 재설계 — 249건 증강 시드 기반으로 변경
 
@@ -15,7 +15,7 @@
 | 2 | 시드 데이터 통합 | **완료** | 3/3 |
 | 3 | 합성 대화 데이터 생성 | **완료** | 10/10 |
 | 4 | 데이터 검증 및 정제 | **완료** | 5/5 |
-| 5 | 파인튜닝 실행 | **대기** | 0/6 |
+| 5 | 파인튜닝 실행 | **진행중** | 2/6 |
 | 6 | 모델 평가 | **대기** | 0/4 |
 | 7 | 백엔드 통합 | **대기** | 0/4 |
 
@@ -256,8 +256,8 @@ Output (GPT-4o):
 |---|--------|----------|------|------|
 | 5.1 | train.py + evaluate.py + inference.py 구현 | 학습/평가/추론 3개 스크립트, 주석 상세 | ✅ 완료 | .gitignore도 수정 (train/val/test 포함) |
 | 5.2 | training_config.yaml 업데이트 | 데이터 5,433건 반영, 분할 설정 제거 | ✅ 완료 | |
-| 5.3 | RunPod 인스턴스 세팅 | A100 80GB, 환경 설치, 데이터 업로드 | ⬜ 대기 | |
-| 5.4 | 실험 1: 14B baseline | Qwen3-14B, r=32, epoch=3, lr=2e-4 | ⬜ 대기 | ~2~3시간 |
+| 5.3 | GPU 환경 세팅 | A100 80GB (Claude Code 환경), pip install, .env, PyTorch 2.6.0 업그레이드 | ✅ 완료 | RunPod 대신 기존 환경 사용, trl 1.0.0 API 변경 대응 (max_seq_length→max_length) |
+| 5.4 | 실험 1: 14B baseline | Qwen3-14B, r=32, epoch=3, lr=2e-4 | ✅ 완료 | 54분 소요, 과적합 확인 (아래 상세) |
 | 5.5 | 실험 2: 7B baseline | Qwen3-7B, 동일 설정 | ⬜ 대기 | ~1~1.5시간 |
 | 5.6 | 실험 3: 최적화 | 실험 1,2 결과 기반 하이퍼파라미터 조정 (아래 참고) | ⬜ 대기 | |
 
@@ -290,11 +290,33 @@ eval_loss는 좋은데 생성 품질이 나쁨
 | LoRA r | 32 | 32 | TBD |
 | epochs | 3 | 3 | TBD |
 | lr | 2e-4 | 2e-4 | TBD |
-| train_loss | TBD | TBD | TBD |
-| eval_loss | TBD | TBD | TBD |
-| 학습 시간 | TBD | TBD | TBD |
-| best epoch | TBD | TBD | TBD |
-| WandB URL | TBD | TBD | TBD |
+| train_loss (최종) | 0.1541 | TBD | TBD |
+| eval_loss (최종) | 0.7112 | TBD | TBD |
+| eval_loss (best) | **0.6368** (epoch 1) | TBD | TBD |
+| mean_token_accuracy | 84.97% | TBD | TBD |
+| 어댑터 크기 | 525.3MB | TBD | TBD |
+| 학습 시간 | 54분 (3,261초) | TBD | TBD |
+| best epoch | **1** (of 3) | TBD | TBD |
+| WandB URL | [링크](https://wandb.ai/mina_kwak-pmi/soba-chatbot-finetuning/runs/2jnuktci) | TBD | TBD |
+
+**실험 1 상세 분석:**
+
+```
+Epoch별 eval_loss 추이:
+  Epoch 1 (step ~543):  eval_loss = 0.637  ← best
+  Epoch 2 (step ~1086): eval_loss = 0.654  ← +0.017 상승
+  Epoch 3 (step ~1629): eval_loss = 0.711  ← +0.074 상승
+
+진단: 전형적인 과적합 (overfitting)
+  - train_loss는 지속 하강 (2.0 → 0.15)하지만 eval_loss는 epoch 1 이후 상승
+  - epoch 1이 최적 지점, epoch 2~3은 학습 데이터 암기
+  - load_best_model_at_end=true로 epoch 1 체크포인트가 저장됨
+
+권장 조정 (실험 3):
+  - epoch 3 → 1~2로 축소
+  - dropout 0.05 → 0.1 상향
+  - 또는 lr 2e-4 → 1e-4 하향
+```
 
 **RunPod 비용 추정:**
 
@@ -383,6 +405,9 @@ JSON 파싱률           >= 95%       epoch 늘리기 (3→5) 또는
 
 | 날짜 | Phase | 이슈 | 해결 | 상태 |
 |------|-------|------|------|------|
+| 2026-04-09 | 5.3 | PyTorch 2.4.1에 set_submodule 없음 (transformers 5.5.1 호환 문제) | PyTorch 2.4.1 → 2.6.0 업그레이드 | ✅ 해결 |
+| 2026-04-09 | 5.3 | trl 1.0.0에서 SFTConfig API 변경 (max_seq_length → max_length) | train.py에서 파라미터명 수정 | ✅ 해결 |
+| 2026-04-09 | 5.4 | 실험 1 과적합: eval_loss epoch 1(0.637) → epoch 3(0.711) 상승 | 실험 3에서 epoch 축소 + dropout 상향 예정 | ⏳ 대응 예정 |
 | 2026-04-09 | 2 | questions.db는 레거시 TPORM 프레임워크, 현행은 TPOLEACI | 증강 데이터 249건(TPOLEACI)을 시드로 사용하도록 변경 | ✅ 해결 |
 | 2026-04-09 | 3 | 기존 topics.json 21개 주제에 빈 질문 | 폐기, 249건 실제 시드로 대체 | ✅ 해결 |
 | 2026-04-09 | 3-4 | 데이터 규모/검증 계획 부실 | Phase 3/4 전면 재설계 (v2) | ✅ 해결 |
