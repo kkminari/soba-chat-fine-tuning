@@ -1,0 +1,22 @@
+__pycache__/
+*.pyc
+.env
+wandb/
+outputs/
+checkpoints/
+*.pt
+*.bin
+*.safetensors
+.DS_Store
+.ipynb_checkpoints/
+# raw 데이터 (중간 파일, git 불필요)
+data/raw/
+
+# processed 중간 파일 (chatml.jsonl, chatml_clean.jsonl)
+data/processed/chatml.jsonl
+data/processed/chatml_clean.jsonl
+
+# train/val/test는 git에 포함 (RunPod에서 사용)
+# data/processed/train.jsonl  ← 포함
+# data/processed/val.jsonl    ← 포함
+# data/processed/test.jsonl   ← 포함

@@ -1,0 +1,66 @@
+{
+  "description": "합성 데이터 생성 시 다양성 확보를 위한 변수 조합 매트릭스",
+
+  "response_styles": [
+    {"id": "short", "label": "짧고 간결", "instruction": "1-2문장으로 짧게 답변"},
+    {"id": "detailed", "label": "길고 상세", "instruction": "3-5문장으로 구체적인 예시와 함께 상세히 답변"},
+    {"id": "casual", "label": "구어체", "instruction": "ㅋㅋ, ㅎㅎ 등 구어체와 줄임말 사용"},
+    {"id": "emoji", "label": "이모지 포함", "instruction": "이모지를 섞어가며 답변"}
+  ],
+
+  "conversation_stages": [
+    {"id": "early", "label": "초반 (1-2번째 질문)", "instruction": "아직 대화 초반이라 어색한 분위기, 가벼운 톤"},
+    {"id": "mid", "label": "중반 (3-5번째 질문)", "instruction": "대화가 자연스러워진 상태, 친근한 톤"},
+    {"id": "late", "label": "후반 (6-8번째 질문)", "instruction": "충분히 라포가 형성된 상태, 깊이 있는 대화"}
+  ],
+
+  "user_sentiments": [
+    {"id": "positive", "label": "긍정적", "instruction": "주제에 대해 호의적이고 적극적인 태도"},
+    {"id": "neutral", "label": "중립적", "instruction": "특별한 감정 없이 담담하게 답변"},
+    {"id": "negative", "label": "부정적", "instruction": "주제에 대해 부정적이거나 불만족스러운 태도"},
+    {"id": "indifferent", "label": "무관심", "instruction": "관심이 적고 짧게 답변하려는 태도"}
+  ],
+
+  "task_data_targets": {
+    "response": {
+      "target_count": 1000,
+      "combinations": "30 topics × response_styles(4) × conversation_stages(3) × user_sentiments(4) = 1440 가능 → 필터링 후 ~1000",
+      "priority": "핵심 태스크"
+    },
+    "intro": {
+      "target_count": 150,
+      "combinations": "30 topics × 5 variations = 150",
+      "priority": "단순"
+    },
+    "first_question": {
+      "target_count": 200,
+      "combinations": "30 topics × 질문타입(8) 중 랜덤 선택 → ~200",
+      "priority": "단순"
+    },
+    "retry": {
+      "target_count": 150,
+      "combinations": "30 topics × 5 invalid_response_types = 150",
+      "priority": "패턴 제한"
+    },
+    "ending": {
+      "target_count": 150,
+      "combinations": "30 topics × 5 conversation_summaries = 150",
+      "priority": "단순"
+    },
+    "title": {
+      "target_count": 200,
+      "combinations": "다양한 user_input 스타일 200개",
+      "priority": "단순"
+    }
+  },
+
+  "invalid_response_types": [
+    {"id": "too_short", "label": "너무 짧은 응답", "example": "네"},
+    {"id": "off_topic", "label": "주제와 무관한 응답", "example": "오늘 날씨 좋다"},
+    {"id": "gibberish", "label": "자음/모음만", "example": "ㅋㅋㅋㅋ"},
+    {"id": "evasive", "label": "회피성 응답", "example": "잘 모르겠어요"},
+    {"id": "reverse_question", "label": "역질문", "example": "그게 뭐예요?"}
+  ],
+
+  "total_target": 1850
+}
