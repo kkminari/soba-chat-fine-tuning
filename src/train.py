@@ -360,6 +360,7 @@ def train(config: dict):
         metric_for_best_model=train_cfg["metric_for_best_model"],
         greater_is_better=train_cfg["greater_is_better"],
         report_to=train_cfg["report_to"],
+        **({k: train_cfg[k] for k in ("eval_steps", "save_steps", "save_total_limit") if k in train_cfg}),
 
         # SFT 설정
         dataset_text_field="text",          # chat template 적용된 텍스트 필드

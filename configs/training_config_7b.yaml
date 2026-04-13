@@ -1,0 +1,89 @@
+# ============================================================
+# SOBA 챗봇 파인튜닝 설정 — 실험 2: Qwen3-8B Baseline
+# ============================================================
+# 목적: 14B 대비 8B 성능 차이 측정 (동일 하이퍼파라미터)
+# 베이스: Qwen3-8B + QLoRA (Qwen3에 7B 없음, 8B가 차선 모델)
+# 데이터: GPT-4o 합성 데이터 5,433건 (train 4,342 / val 513 / test 578)
+
+# ============================================================
+# 모델 설정
+# ============================================================
+model:
+  name: "Qwen/Qwen3-8B"
+  max_seq_length: 768             # 14B와 동일 (공정 비교)
+
+# ============================================================
+# 양자화 (Quantization) 설정
+# ============================================================
+quantization:
+  load_in_4bit: true
+  bnb_4bit_quant_type: "nf4"
+  bnb_4bit_compute_dtype: "bfloat16"
+  bnb_4bit_use_double_quant: true
+
+# ============================================================
+# LoRA 설정
+# ============================================================
+lora:
+  r: 32                          # 14B와 동일 (공정 비교)
+  lora_alpha: 64                 # r의 2배
+  lora_dropout: 0.05             # 14B와 동일
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+  bias: "none"
+  task_type: "CAUSAL_LM"
+
+# ============================================================
+# 학습 하이퍼파라미터
+# ============================================================
+training:
+  num_train_epochs: 3
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 4
+  gradient_accumulation_steps: 2  # 실효 배치 = 4 × 2 = 8
+  learning_rate: 2.0e-4
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.05
+  optim: "paged_adamw_8bit"
+  fp16: false
+  bf16: true                     # A100: true
+  logging_steps: 5
+  eval_strategy: "epoch"
+  save_strategy: "epoch"
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+  greater_is_better: false
+  report_to: "wandb"
+
+# ============================================================
+# 데이터 설정
+# ============================================================
+data:
+  data_path: "./data/processed"   # train.jsonl, val.jsonl, test.jsonl 위치
+
+# ============================================================
+# WandB
+# ============================================================
+wandb:
+  project: "soba-chatbot-finetuning"
+  run_name: "qwen3-8b-qlora-soba-exp2"
+
+# ============================================================
+# 출력 경로
+# ============================================================
+output:
+  output_dir: "./outputs_exp2"
+  adapter_dir: "./outputs_exp2/adapter"
+
+# ============================================================
+# 추론 설정
+# ============================================================
+inference:
+  temperature: 0.7
+  max_new_tokens: 256

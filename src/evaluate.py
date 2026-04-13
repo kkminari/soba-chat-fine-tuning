@@ -148,7 +148,7 @@ def evaluate_response_task(predictions: list[dict]) -> dict:
         메트릭 딕셔너리
     """
     emoji_p = re.compile(r"[\U0001F600-\U0001F9FF\U0001FA00-\U0001FA6F\u2600-\u26FF]")
-    honorific_p = re.compile(r"(요|세요|네요|습니다|겠어요|드려요)\b")
+    honorific_p = re.compile(r"(요|세요|네요|습니다|겠어요|드려요|죠|지요|군요|이에요|예요|인가요|나요|할까요|볼까요|실까요|던가요|합니다|됩니다|랍니다)\b")
     survey_w = ["설문", "조사", "서베이"]
 
     json_ok = 0
@@ -279,10 +279,20 @@ def run_evaluation(config: dict, adapter_dir: str):
     with open(output_dir / "eval_results.json", "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
 
-    # 예측 샘플 저장 (리뷰용)
+    # 전체 예측 결과 저장
+    all_predictions = []
+    for task, preds in predictions.items():
+        for p in preds:
+            all_predictions.append({"task": task, **p})
+
+    with open(output_dir / "eval_predictions.jsonl", "w", encoding="utf-8") as f:
+        for p in all_predictions:
+            f.write(json.dumps(p, ensure_ascii=False) + "\n")
+
+    # 예측 샘플 저장 (리뷰용, 태스크당 5건)
     samples = []
     for task, preds in predictions.items():
-        for p in preds[:5]:  # 태스크당 5건
+        for p in preds[:5]:
             samples.append({"task": task, **p})
 
     with open(output_dir / "eval_samples.json", "w", encoding="utf-8") as f:
