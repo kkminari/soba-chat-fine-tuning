@@ -1,0 +1,92 @@
+# ============================================================
+# SOBA 챗봇 파인튜닝 — 최종 학습 설정
+# ============================================================
+# 기반: Exp3a (Qwen3-8B, dropout 0.10, 정밀 체크포인팅)
+# 데이터: processed_v2 (정제 완료 — 사진요청/금지어/이모지/인사말 제거)
+# 확정일: 2026-04-13
+
+# ============================================================
+# 모델 설정
+# ============================================================
+model:
+  name: "Qwen/Qwen3-8B"
+  max_seq_length: 768
+
+# ============================================================
+# 양자화 (Quantization) 설정
+# ============================================================
+quantization:
+  load_in_4bit: true
+  bnb_4bit_quant_type: "nf4"
+  bnb_4bit_compute_dtype: "bfloat16"
+  bnb_4bit_use_double_quant: true
+
+# ============================================================
+# LoRA 설정
+# ============================================================
+lora:
+  r: 32
+  lora_alpha: 64
+  lora_dropout: 0.10
+  target_modules:
+    - q_proj
+    - k_proj
+    - v_proj
+    - o_proj
+    - gate_proj
+    - up_proj
+    - down_proj
+  bias: "none"
+  task_type: "CAUSAL_LM"
+
+# ============================================================
+# 학습 하이퍼파라미터
+# ============================================================
+training:
+  num_train_epochs: 1                # 1 epoch (step ~543)이면 충분. 과적합 방지.
+  per_device_train_batch_size: 4
+  per_device_eval_batch_size: 4
+  gradient_accumulation_steps: 2     # effective batch size = 8
+  learning_rate: 2.0e-4
+  lr_scheduler_type: "cosine"
+  warmup_ratio: 0.05
+  optim: "paged_adamw_8bit"
+  fp16: false
+  bf16: true
+  logging_steps: 5
+  eval_strategy: "steps"
+  eval_steps: 100
+  save_strategy: "steps"
+  save_steps: 100
+  save_total_limit: 3
+  load_best_model_at_end: true
+  metric_for_best_model: "eval_loss"
+  greater_is_better: false
+  report_to: "wandb"
+
+# ============================================================
+# 데이터 설정
+# ============================================================
+data:
+  data_path: "./data/processed_v2"
+
+# ============================================================
+# WandB
+# ============================================================
+wandb:
+  project: "soba-chatbot-finetuning"
+  run_name: "qwen3-8b-qlora-soba-v2-clean"
+
+# ============================================================
+# 출력 경로
+# ============================================================
+output:
+  output_dir: "./outputs_v2"
+  adapter_dir: "./outputs_v2/adapter"
+
+# ============================================================
+# 추론 설정
+# ============================================================
+inference:
+  temperature: 0.7
+  max_new_tokens: 256

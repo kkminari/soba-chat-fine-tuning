@@ -282,7 +282,7 @@ def train(config: dict):
     print(f"\nWandB: {wandb_cfg['project']} / {wandb_cfg['run_name']}")
 
     # --- 데이터 로드 ---
-    data_path = Path(__file__).parent.parent / "data" / "processed"
+    data_path = Path(__file__).parent.parent / config.get("data", {}).get("data_path", "data/processed")
     train_dataset, val_dataset = load_dataset_from_jsonl(str(data_path))
 
     # --- 모델 + 토크나이저 로드 ---

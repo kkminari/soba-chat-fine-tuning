@@ -222,7 +222,8 @@ def run_evaluation(config: dict, adapter_dir: str):
     model, tokenizer = load_model_for_eval(config, adapter_dir)
 
     # --- test 데이터 로드 ---
-    test_path = Path(__file__).parent.parent / "data" / "processed" / "test.jsonl"
+    data_dir = config.get("data", {}).get("data_path", "data/processed")
+    test_path = Path(__file__).parent.parent / data_dir / "test.jsonl"
     with open(test_path, "r", encoding="utf-8") as f:
         test_data = [json.loads(l) for l in f]
 
@@ -272,7 +273,8 @@ def run_evaluation(config: dict, adapter_dir: str):
         print(f"\n[{task}] ({len(preds)}건): 비어있지 않은 응답 {rate:.1f}%")
 
     # --- 결과 저장 ---
-    output_dir = Path(__file__).parent.parent / "outputs"
+    out_cfg = config.get("output", {}).get("output_dir", "outputs")
+    output_dir = Path(__file__).parent.parent / out_cfg
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # 메트릭 저장

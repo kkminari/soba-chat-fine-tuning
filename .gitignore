@@ -20,3 +20,11 @@ data/processed/chatml_clean.jsonl
 # data/processed/train.jsonl  ← 포함
 # data/processed/val.jsonl    ← 포함
 # data/processed/test.jsonl   ← 포함
+
+# 실험 출력 (어댑터는 HF Hub에 업로드)
+outputs_v2/
+src/outputs_exp2/
+src/outputs_exp3a/
+
+# 학습/평가 로그
+*.log
