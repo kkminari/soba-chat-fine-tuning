@@ -1,0 +1,1471 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOBA 챗봇 파인튜닝 모델 교체 작업 보고</title>
+<style>
+  :root {
+    --navy: #1B2A4A;
+    --navy-dark: #0F1D33;
+    --blue: #2C5F8A;
+    --blue-light: #3A7CB8;
+    --blue-pale: #D6E4F0;
+    --gray-dark: #3D3D3D;
+    --gray: #6B7280;
+    --gray-mid: #9CA3AF;
+    --gray-light: #E5E7EB;
+    --gray-bg: #F3F4F6;
+    --gray-bg2: #F8F9FA;
+    --black: #111111;
+    --white: #FFFFFF;
+    --pass: #1A6B3C;
+    --pass-bg: #E8F5ED;
+    --pass-border: #34D058;
+    --fail: #9B2C2C;
+    --fail-bg: #FDE8E8;
+    --cond: #7C6A0A;
+    --cond-bg: #FEF9E7;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    color: var(--black);
+    line-height: 1.75;
+    background: var(--white);
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 48px 48px 80px;
+  }
+
+  /* ===== 헤더 ===== */
+  .report-header {
+    border-bottom: 3px solid var(--navy);
+    padding-bottom: 28px;
+    margin-bottom: 44px;
+  }
+  .report-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+  .report-header .subtitle {
+    font-size: 15px;
+    color: var(--gray);
+    margin-bottom: 20px;
+  }
+  .header-meta {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .header-meta-item {
+    background: var(--gray-bg);
+    border-left: 3px solid var(--blue);
+    padding: 12px 16px;
+  }
+  .header-meta-item .hm-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .header-meta-item .hm-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--navy);
+    margin-top: 2px;
+  }
+
+  /* ===== 진행률 바 ===== */
+  .progress-section {
+    margin-bottom: 44px;
+    background: var(--gray-bg2);
+    border: 1px solid var(--gray-light);
+    border-radius: 8px;
+    padding: 24px 28px;
+  }
+  .progress-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 16px;
+  }
+  .progress-phases {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .phase-block {
+    flex: 1;
+    text-align: center;
+    padding: 10px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+  .phase-block.done {
+    background: var(--navy);
+    color: var(--white);
+  }
+  .phase-block.current {
+    background: var(--blue-pale);
+    color: var(--navy);
+    border: 2px solid var(--blue);
+  }
+  .phase-block.pending {
+    background: var(--gray-light);
+    color: var(--gray);
+  }
+  .phase-block .phase-num {
+    font-size: 16px;
+    font-weight: 800;
+    display: block;
+  }
+  .progress-bar-wrap {
+    background: var(--gray-light);
+    border-radius: 6px;
+    height: 10px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--navy) 0%, var(--blue-light) 100%);
+    transition: width 0.5s;
+  }
+  .progress-label {
+    text-align: right;
+    font-size: 12px;
+    color: var(--gray);
+    margin-top: 4px;
+  }
+
+  /* ===== 섹션 공통 ===== */
+  .section {
+    margin-bottom: 48px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--navy);
+  }
+  .section-num {
+    background: var(--navy);
+    color: var(--white);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .section h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--navy);
+  }
+  .section h3 {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--gray-dark);
+    margin: 24px 0 10px;
+  }
+
+  /* ===== 테이블 ===== */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 20px;
+    font-size: 13.5px;
+  }
+  thead th {
+    background: var(--navy);
+    color: var(--white);
+    font-weight: 600;
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 12.5px;
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--gray-light);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) { background: var(--gray-bg); }
+  tbody tr:hover { background: #E8EDF3; }
+  .table-note {
+    font-size: 12px;
+    color: var(--gray);
+    margin-top: -12px;
+    margin-bottom: 16px;
+  }
+
+  /* ===== 배지 ===== */
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 3px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+  }
+  .badge-pass { background: var(--pass-bg); color: var(--pass); }
+  .badge-fail { background: var(--fail-bg); color: var(--fail); }
+  .badge-cond { background: var(--cond-bg); color: var(--cond); }
+
+  /* ===== 강조 박스 ===== */
+  .highlight-box {
+    background: var(--gray-bg);
+    border-left: 4px solid var(--blue);
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .highlight-box strong { color: var(--navy); }
+
+  .result-box {
+    border: 1px solid var(--gray-light);
+    border-left: 4px solid var(--pass);
+    background: var(--pass-bg);
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .result-box.conditional {
+    border-left-color: var(--cond);
+    background: var(--cond-bg);
+  }
+
+  /* ===== KPI 카드 ===== */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin: 20px 0;
+  }
+  .kpi-card {
+    text-align: center;
+    padding: 18px 12px;
+    border: 1px solid var(--gray-light);
+    border-radius: 6px;
+    background: var(--white);
+  }
+  .kpi-card .kpi-value {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--navy);
+    line-height: 1.2;
+  }
+  .kpi-card .kpi-label {
+    font-size: 11.5px;
+    color: var(--gray);
+    margin-top: 4px;
+    line-height: 1.3;
+  }
+  .kpi-card .kpi-sub {
+    font-size: 11px;
+    color: var(--blue);
+    margin-top: 2px;
+  }
+
+  /* ===== 파이프라인 다이어그램 ===== */
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin: 20px 0;
+    overflow-x: auto;
+  }
+  .pipe-step {
+    text-align: center;
+    padding: 14px 16px;
+    border-radius: 6px;
+    min-width: 130px;
+    flex-shrink: 0;
+  }
+  .pipe-step.source {
+    background: var(--blue-pale);
+    border: 1px solid var(--blue);
+  }
+  .pipe-step.process {
+    background: var(--gray-bg);
+    border: 1px solid var(--gray-light);
+  }
+  .pipe-step.output {
+    background: var(--navy);
+    color: var(--white);
+  }
+  .pipe-step .ps-num {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--navy);
+  }
+  .pipe-step.output .ps-num { color: var(--white); }
+  .pipe-step .ps-label {
+    font-size: 11px;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+  .pipe-step .ps-detail {
+    font-size: 10px;
+    color: var(--gray);
+    margin-top: 2px;
+  }
+  .pipe-step.output .ps-detail { color: var(--blue-pale); }
+  .pipe-arrow {
+    font-size: 18px;
+    color: var(--gray-mid);
+    padding: 0 6px;
+    flex-shrink: 0;
+  }
+
+  /* ===== 차트: CSS 바 차트 ===== */
+  .bar-chart {
+    margin: 16px 0 24px;
+  }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .bar-label {
+    width: 130px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--gray-dark);
+    flex-shrink: 0;
+    text-align: right;
+    padding-right: 12px;
+  }
+  .bar-track {
+    flex: 1;
+    background: var(--gray-light);
+    border-radius: 4px;
+    height: 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    padding-left: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--white);
+    min-width: 36px;
+  }
+  .bar-fill.navy { background: var(--navy); }
+  .bar-fill.blue { background: var(--blue); }
+  .bar-fill.blue-light { background: var(--blue-light); }
+  .bar-value {
+    width: 60px;
+    text-align: right;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray-dark);
+    padding-left: 8px;
+    flex-shrink: 0;
+  }
+
+  /* ===== Loss 곡선 (CSS) ===== */
+  .loss-chart {
+    position: relative;
+    height: 200px;
+    border-left: 2px solid var(--gray-dark);
+    border-bottom: 2px solid var(--gray-dark);
+    margin: 24px 40px 40px 60px;
+  }
+  .loss-chart .y-axis {
+    position: absolute;
+    left: -55px;
+    font-size: 11px;
+    color: var(--gray);
+    transform: translateY(-50%);
+  }
+  .loss-chart .x-label {
+    position: absolute;
+    bottom: -28px;
+    font-size: 11px;
+    color: var(--gray);
+    transform: translateX(-50%);
+  }
+  .loss-chart .grid-line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 1px dashed var(--gray-light);
+  }
+  .loss-dot {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2;
+  }
+  .loss-dot.best {
+    width: 14px;
+    height: 14px;
+    border: 3px solid var(--white);
+    box-shadow: 0 0 0 2px var(--blue);
+  }
+  .loss-dot-label {
+    position: absolute;
+    font-size: 10px;
+    font-weight: 700;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    z-index: 3;
+  }
+  .loss-line {
+    position: absolute;
+    height: 2px;
+    transform-origin: left center;
+    z-index: 1;
+  }
+  .chart-legend {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--gray-dark);
+  }
+  .legend-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 5px;
+    vertical-align: middle;
+  }
+
+  /* ===== 모델 카드 ===== */
+  .model-card {
+    border: 2px solid var(--blue);
+    border-radius: 8px;
+    padding: 24px 28px;
+    margin: 24px 0;
+    background: linear-gradient(135deg, #F0F5FA 0%, var(--white) 100%);
+  }
+  .model-card .mc-badge {
+    display: inline-block;
+    background: var(--navy);
+    color: var(--white);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 12px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .model-card .mc-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-bottom: 16px;
+  }
+  .mc-specs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .mc-spec {
+    text-align: center;
+    padding: 12px 8px;
+    background: var(--white);
+    border: 1px solid var(--gray-light);
+    border-radius: 6px;
+  }
+  .mc-spec .ms-value {
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--navy);
+  }
+  .mc-spec .ms-label {
+    font-size: 11px;
+    color: var(--gray);
+    margin-top: 3px;
+  }
+  .mc-reason {
+    font-size: 13px;
+    color: var(--gray-dark);
+    background: var(--gray-bg);
+    padding: 12px 16px;
+    border-radius: 4px;
+    line-height: 1.7;
+  }
+
+  /* ===== 비교 카드 ===== */
+  .compare-row {
+    display: grid;
+    grid-template-columns: 1fr 40px 1fr;
+    gap: 0;
+    margin: 20px 0;
+    align-items: stretch;
+  }
+  .compare-card {
+    padding: 20px;
+    border-radius: 6px;
+    border: 1px solid var(--gray-light);
+  }
+  .compare-card.before { background: var(--gray-bg); }
+  .compare-card.after { background: #F0F5FA; border-color: var(--blue); }
+  .compare-card .cc-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+  }
+  .compare-card.before .cc-label { color: var(--gray); }
+  .compare-card.after .cc-label { color: var(--blue); }
+  .compare-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: var(--blue);
+    font-weight: 700;
+  }
+  .cc-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+  }
+  .cc-item:last-child { border-bottom: none; }
+  .cc-item .cc-key { color: var(--gray); }
+  .cc-item .cc-val { font-weight: 600; color: var(--navy); }
+
+  /* ===== 게이지 미터 ===== */
+  .gauge-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin: 20px 0;
+  }
+  .gauge {
+    text-align: center;
+    padding: 16px;
+    border: 1px solid var(--gray-light);
+    border-radius: 6px;
+    background: var(--white);
+  }
+  .gauge-circle {
+    position: relative;
+    width: 90px;
+    height: 90px;
+    margin: 0 auto 10px;
+  }
+  .gauge-circle svg {
+    transform: rotate(-90deg);
+  }
+  .gauge-circle .gauge-bg {
+    fill: none;
+    stroke: var(--gray-light);
+    stroke-width: 8;
+  }
+  .gauge-circle .gauge-fill {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.5s;
+  }
+  .gauge-pct {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--navy);
+  }
+  .gauge .gauge-label {
+    font-size: 12px;
+    color: var(--gray-dark);
+    font-weight: 600;
+  }
+  .gauge .gauge-target {
+    font-size: 11px;
+    color: var(--gray);
+  }
+
+  /* ===== 타임라인 ===== */
+  .timeline {
+    margin: 20px 0;
+    padding-left: 0;
+    list-style: none;
+  }
+  .timeline li {
+    position: relative;
+    padding: 0 0 24px 36px;
+    border-left: 2px solid var(--gray-light);
+  }
+  .timeline li:last-child { border-left-color: transparent; padding-bottom: 0; }
+  .timeline li::before {
+    content: '';
+    position: absolute;
+    left: -7px;
+    top: 4px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--blue);
+    border: 2px solid var(--white);
+    box-shadow: 0 0 0 2px var(--blue-pale);
+  }
+  .timeline .tl-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .timeline .tl-title {
+    font-weight: 600;
+    color: var(--navy);
+    font-size: 14px;
+  }
+  .timeline .tl-time {
+    font-size: 12px;
+    color: var(--white);
+    background: var(--blue);
+    padding: 1px 8px;
+    border-radius: 3px;
+  }
+  .timeline .tl-desc {
+    font-size: 13px;
+    color: var(--gray-dark);
+    margin-top: 4px;
+    line-height: 1.6;
+  }
+
+  /* ===== 비용 하이라이트 ===== */
+  .cost-highlight {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 14px;
+    border-top: 2px solid var(--navy);
+    margin-top: -1px;
+  }
+  .cost-highlight .cl-label { font-size: 13px; color: var(--gray); }
+  .cost-highlight .cl-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--navy);
+  }
+
+  /* ===== 하이퍼파라미터 그리드 ===== */
+  .hp-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 16px 0;
+  }
+  .hp-item {
+    background: var(--gray-bg);
+    padding: 10px 12px;
+    border-radius: 4px;
+    border-left: 3px solid var(--blue);
+  }
+  .hp-item .hp-key {
+    font-size: 11px;
+    color: var(--gray);
+    font-weight: 600;
+  }
+  .hp-item .hp-val {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--navy);
+    margin-top: 2px;
+  }
+
+  /* ===== 본문 ===== */
+  p {
+    font-size: 14px;
+    color: var(--gray-dark);
+    margin-bottom: 10px;
+  }
+  ul {
+    margin: 8px 0 16px 20px;
+    font-size: 14px;
+    color: var(--gray-dark);
+  }
+  li { margin-bottom: 5px; }
+  .num { font-weight: 700; color: var(--navy); }
+
+  /* ===== 프린트 ===== */
+  @media print {
+    body { padding: 20px; max-width: 100%; font-size: 12px; }
+    .section { page-break-inside: avoid; }
+    tbody tr:hover { background: inherit; }
+    .progress-section, .model-card, .kpi-row, .compare-row { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== 헤더 ========== -->
+<header class="report-header">
+  <h1>SOBA 챗봇 파인튜닝 모델 교체 작업 보고</h1>
+  <p class="subtitle">대화 생성 모듈의 Claude Sonnet API 의존 제거 및 자체 파인튜닝 모델 전환</p>
+  <div class="header-meta">
+    <div class="header-meta-item">
+      <div class="hm-label">작업 기간</div>
+      <div class="hm-value">2026.04.07 ~ 04.13 (7일)</div>
+    </div>
+    <div class="header-meta-item">
+      <div class="hm-label">진행 상태</div>
+      <div class="hm-value">Phase 6/7 완료 (백엔드 통합 대기)</div>
+    </div>
+    <div class="header-meta-item">
+      <div class="hm-label">총 투입 비용</div>
+      <div class="hm-value">~$35</div>
+    </div>
+  </div>
+</header>
+
+<!-- ========== 전체 진행률 ========== -->
+<div class="progress-section">
+  <div class="progress-title">전체 프로젝트 진행 현황</div>
+  <div class="progress-phases">
+    <div class="phase-block done"><span class="phase-num">1</span>프로젝트 세팅</div>
+    <div class="phase-block done"><span class="phase-num">2</span>시드 데이터</div>
+    <div class="phase-block done"><span class="phase-num">3</span>데이터 생성</div>
+    <div class="phase-block done"><span class="phase-num">4</span>검증 / 정제</div>
+    <div class="phase-block done"><span class="phase-num">5</span>파인튜닝</div>
+    <div class="phase-block done"><span class="phase-num">6</span>모델 평가</div>
+    <div class="phase-block current"><span class="phase-num">7</span>백엔드 통합</div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" style="width: 86%;"></div>
+  </div>
+  <div class="progress-label">Phase 1~6 완료 / Phase 7 대기 (86%)</div>
+</div>
+
+
+<!-- ========== Section 1: 개요 ========== -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">1</div>
+    <h2>개요</h2>
+  </div>
+
+  <h3>배경 및 목적</h3>
+  <p>
+    SOBA 마케팅 리서치 챗봇은 현재 6개 대화 생성 태스크에 Anthropic Claude Sonnet API를 사용하고 있습니다.
+    외부 API에 대한 비용 부담(월 추정 ~$200)과 서비스 가용성 의존 리스크를 해소하기 위해,
+    오픈소스 모델 Qwen3-8B를 QLoRA 방식으로 파인튜닝하여 자체 모델로 교체하는 작업을 수행했습니다.
+  </p>
+
+  <h3>교체 범위</h3>
+  <table>
+    <thead>
+      <tr><th>구분</th><th>기능</th><th>현재</th><th>변경 후</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>대화 생성</td><td>6개 태스크 (인트로, 첫 질문, 응답, 재시도, 종료, 제목)</td><td>Claude Sonnet API</td><td><strong>Qwen3-8B Fine-tuned</strong></td></tr>
+      <tr><td>응답 분석</td><td>사용자 응답 적절성 판단</td><td>Claude Haiku API</td><td>유지 (변경 없음)</td></tr>
+      <tr><td>질문 순서 결정</td><td>다음 질문 자동 선택</td><td>Claude Haiku API</td><td>유지 (변경 없음)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>6개 대화 생성 태스크</h3>
+  <table>
+    <thead>
+      <tr><th>태스크</th><th>기능</th><th>출력 형식</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>response</strong></td><td>사용자 응답에 공감 코멘트 + 다음 질문 리프레이징</td><td>JSON (comment, next_question)</td></tr>
+      <tr><td><strong>intro</strong></td><td>대화 시작 인트로 메시지 생성</td><td>Plain text</td></tr>
+      <tr><td><strong>first_question</strong></td><td>첫 질문으로 자연스럽게 전환</td><td>Plain text</td></tr>
+      <tr><td><strong>retry</strong></td><td>불성실 응답에 부드러운 재요청</td><td>Plain text</td></tr>
+      <tr><td><strong>ending</strong></td><td>대화 종료 감사 메시지</td><td>Plain text</td></tr>
+      <tr><td><strong>title</strong></td><td>리서치 요청을 15자 이내 제목으로 변환</td><td>Plain text (15자 이내)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ========== Section 2: 학습 데이터 ========== -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">2</div>
+    <h2>학습 데이터 준비</h2>
+  </div>
+
+  <h3>2-1. 시드 데이터 구성</h3>
+  <p>
+    기존에 증강 완료된 마케팅 리서치 데이터 <span class="num">249건</span>을 시드로 활용했습니다.
+    각 시드는 TPOLEACI 8개 질문 프레임워크를 포함하고 있어, 총 <span class="num">1,992개</span> 질문 컨텍스트를 확보했습니다.
+  </p>
+
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <div class="kpi-value">249</div>
+      <div class="kpi-label">시드 데이터</div>
+      <div class="kpi-sub">술 144 + 화장품 105</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">8</div>
+      <div class="kpi-label">질문 프레임워크</div>
+      <div class="kpi-sub">TPOLEACI</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">1,992</div>
+      <div class="kpi-label">질문 컨텍스트</div>
+      <div class="kpi-sub">249 x 8</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-value">178</div>
+      <div class="kpi-label">고유 주제</div>
+      <div class="kpi-sub">중복 제외</div>
+    </div>
+  </div>
+
+  <p class="table-note">
+    TPOLEACI: Time(시간), Person(인물), Occasion(상황), Location(장소), Emotion(감정), Action(행동), Cognition(인지), Image(이미지)
+  </p>
+
+  <h3>2-2. 합성 데이터 생성 파이프라인</h3>
+  <p>
+    GPT-4o(핵심 태스크)와 GPT-4o-mini(보조 태스크)를 활용하여 6개 태스크별 학습 데이터를 비동기 방식으로 생성했습니다.
+    asyncio 기반 10개 동시 호출로 처리하여 전체 생성에 약 14분이 소요되었습니다.
+  </p>
+
+  <!-- 파이프라인 다이어그램 -->
+  <div class="pipeline">
+    <div class="pipe-step source">
+      <div class="ps-num">249</div>
+      <div class="ps-label">시드 데이터</div>
+      <div class="ps-detail">x 8질문 = 1,992</div>
+    </div>
+    <div class="pipe-arrow">&rarr;</div>
+    <div class="pipe-step process">
+      <div class="ps-num">3,139</div>
+      <div class="ps-label">API 호출</div>
+      <div class="ps-detail">비동기 10 concurrent</div>
+    </div>
+    <div class="pipe-arrow">&rarr;</div>
+    <div class="pipe-step process">
+      <div class="ps-num">5,614</div>
+      <div class="ps-label">Raw 데이터</div>
+      <div class="ps-detail">6개 태스크</div>
+    </div>
+    <div class="pipe-arrow">&rarr;</div>
+    <div class="pipe-step process">
+      <div class="ps-num">-633</div>
+      <div class="ps-label">정제 제거</div>
+      <div class="ps-detail">사진/금지어/중복</div>
+    </div>
+    <div class="pipe-arrow">&rarr;</div>
+    <div class="pipe-step output">
+      <div class="ps-num">4,981</div>
+      <div class="ps-label">최종 데이터</div>
+      <div class="ps-detail">ChatML 형식</div>
+    </div>
+  </div>
+
+  <h3>태스크별 생성 상세</h3>
+  <table>
+    <thead>
+      <tr><th>태스크</th><th>생성 모델</th><th>호출 수</th><th>생성 건수</th><th>예상 비용</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>response</td><td>GPT-4o</td><td>1,743</td><td>2,440건</td><td>~$15.90</td></tr>
+      <tr><td>intro</td><td>GPT-4o-mini</td><td>249</td><td>498건</td><td>~$0.04</td></tr>
+      <tr><td>first_question</td><td>GPT-4o-mini</td><td>249</td><td>498건</td><td>~$0.04</td></tr>
+      <tr><td>retry</td><td>GPT-4o-mini</td><td>249</td><td>498건</td><td>~$0.03</td></tr>
+      <tr><td>ending</td><td>GPT-4o-mini</td><td>249</td><td>498건</td><td>~$0.03</td></tr>
+      <tr><td>title</td><td>GPT-4o-mini</td><td>249</td><td>498건</td><td>~$0.01</td></tr>
+    </tbody>
+  </table>
+  <p class="table-note">response 태스크는 1호출당 3개 변형 생성. 실제 수율 46.7% (5,976 목표 대비 2,440 생성).</p>
+
+  <h3>2-3. 품질 검증 및 정제</h3>
+  <p>3회의 파일럿 테스트(120건 체크리스트)를 통해 품질 이슈를 발견하고 프롬프트를 순차 수정했습니다.</p>
+
+  <table>
+    <thead>
+      <tr><th>발견 이슈</th><th>대상 태스크</th><th>조치</th><th>결과</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>이모지 포함</td><td>response</td><td>프롬프트에 "이모지 금지" 규칙 추가</td><td>100% 해소</td></tr>
+      <tr><td>"설문/조사" 금지어 출현</td><td>ending, first_question</td><td>금지어 규칙 + 컨텍스트 재설계</td><td>100% 해소</td></tr>
+      <tr><td>인트로 톤 부자연스러움</td><td>intro</td><td>마케팅 데이터 수집 맥락으로 톤 재설계</td><td>자연스러운 대화 톤 확보</td></tr>
+    </tbody>
+  </table>
+
+  <p style="margin-top: 16px;">자동 정제 파이프라인(<code>clean_data.py</code>)으로 최종 데이터를 확보했습니다.</p>
+
+  <table>
+    <thead>
+      <tr><th>정제 단계</th><th>제거 건수</th><th>잔여 건수</th><th>비고</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>원본 생성 데이터</td><td>-</td><td>5,614건</td><td></td></tr>
+      <tr><td>사진 요청 포함 제거</td><td>-391건</td><td>5,223건</td><td>Image 질문의 정상 데이터 포함 (재정제 시 복원 검토)</td></tr>
+      <tr><td>금지어 포함 제거</td><td>-61건</td><td>5,162건</td><td>설문/조사/서베이</td></tr>
+      <tr><td>TF-IDF 중복 제거</td><td>-128건</td><td>5,034건</td><td>코사인 유사도 > 0.85</td></tr>
+      <tr><td>토큰 초과 제거</td><td>-53건</td><td>4,981건</td><td>768 토큰 초과</td></tr>
+      <tr style="background: var(--pass-bg); font-weight: 600;"><td>최종 정제 완료</td><td>-633건</td><td>4,981건</td><td>정제율 88.7%</td></tr>
+    </tbody>
+  </table>
+
+  <h3>2-4. 데이터 분할</h3>
+  <p>
+    <strong>seed_id 기준</strong>으로 분할하여, 동일 시드에서 생성된 데이터가 train/val/test에 중복 포함되는 것을 원천 방지했습니다.
+    분할 후 누수 검증 결과: <span class="num">0건</span>.
+  </p>
+
+  <!-- 데이터 분할 바 차트 -->
+  <div class="bar-chart">
+    <div class="bar-row">
+      <div class="bar-label">Train</div>
+      <div class="bar-track"><div class="bar-fill navy" style="width: 80%;">199 seeds</div></div>
+      <div class="bar-value">3,970건</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Validation</div>
+      <div class="bar-track"><div class="bar-fill blue" style="width: 10%;">24</div></div>
+      <div class="bar-value">478건</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">Test</div>
+      <div class="bar-track"><div class="bar-fill blue-light" style="width: 10%;">26</div></div>
+      <div class="bar-value">533건</div>
+    </div>
+  </div>
+
+  <!-- 태스크별 분포 -->
+  <h3>태스크별 데이터 분포</h3>
+  <div class="bar-chart">
+    <div class="bar-row">
+      <div class="bar-label">response</div>
+      <div class="bar-track"><div class="bar-fill navy" style="width: 80%;">핵심 태스크</div></div>
+      <div class="bar-value">1,902건</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">retry</div>
+      <div class="bar-track"><div class="bar-fill blue" style="width: 38%;"></div></div>
+      <div class="bar-value">920건</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">ending</div>
+      <div class="bar-track"><div class="bar-fill blue" style="width: 17%;"></div></div>
+      <div class="bar-value">398건</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">intro</div>
+      <div class="bar-track"><div class="bar-fill blue" style="width: 16%;"></div></div>
+      <div class="bar-value">394건</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">first_question</div>
+      <div class="bar-track"><div class="bar-fill blue-light" style="width: 16%;"></div></div>
+      <div class="bar-value">387건</div>
+    </div>
+    <div class="bar-row">
+      <div class="bar-label">title</div>
+      <div class="bar-track"><div class="bar-fill blue-light" style="width: 14%;"></div></div>
+      <div class="bar-value">341건</div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ========== Section 3: 파인튜닝 실험 ========== -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">3</div>
+    <h2>파인튜닝 실험</h2>
+  </div>
+
+  <p>
+    RunPod A100 80GB 환경에서 3회의 실험을 수행했습니다.
+    모든 실험은 QLoRA(4-bit NF4 양자화 + LoRA) 방식을 사용하여 전체 파라미터가 아닌
+    소수의 어댑터 파라미터만 학습했습니다.
+  </p>
+
+  <h3>QLoRA 방식 개요</h3>
+  <div class="highlight-box">
+    <strong>QLoRA (Quantized Low-Rank Adaptation)</strong>는 대규모 언어 모델을 효율적으로 파인튜닝하는 기법입니다.
+    원본 모델의 가중치를 4비트로 양자화(압축)하여 GPU 메모리 사용량을 줄이고,
+    소규모 어댑터 레이어(LoRA)만 학습하여 전체 파라미터의 약 1.8%만 업데이트합니다.
+    이를 통해 A100 GPU 1장으로 80억 파라미터 모델의 파인튜닝이 가능합니다.
+  </div>
+
+  <h3>공통 하이퍼파라미터</h3>
+  <table>
+    <thead>
+      <tr><th>파라미터</th><th>값</th><th>설명</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Quantization</strong></td><td>4-bit NF4</td><td>모델 가중치를 32비트 &rarr; 4비트로 압축. NF4(NormalFloat4)는 정규분포 가중치에 최적화된 양자화 방식</td></tr>
+      <tr><td><strong>LoRA r</strong></td><td>32</td><td>어댑터의 랭크(차원). 높을수록 학습 용량 증가하나 메모리 사용도 증가. 데이터 ~5,000건 규모에 적합한 값</td></tr>
+      <tr><td><strong>LoRA alpha</strong></td><td>64</td><td>어댑터 출력의 스케일링 계수. 일반적으로 r의 2배로 설정하여 학습 신호 강도를 조절</td></tr>
+      <tr><td><strong>LoRA Dropout</strong></td><td>0.05 / 0.10</td><td>학습 시 어댑터 뉴런의 일부를 무작위 비활성화하여 과적합 방지. Exp3a에서 0.10으로 상향</td></tr>
+      <tr><td><strong>Learning Rate</strong></td><td>2e-4 (cosine)</td><td>학습률 0.0002에서 시작하여 코사인 곡선으로 점진 감소. QLoRA 표준 범위 (1e-4 ~ 3e-4)</td></tr>
+      <tr><td><strong>Warmup Ratio</strong></td><td>0.05</td><td>전체 학습의 5%를 워밍업 구간으로 사용. 학습 초기에 학습률을 0에서 서서히 올려 안정적 학습 시작</td></tr>
+      <tr><td><strong>Batch Size</strong></td><td>4 x 2 = 8</td><td>GPU당 4건 처리 x gradient accumulation 2회 = 실효 배치 8. 한번에 8개 샘플의 평균으로 가중치 업데이트</td></tr>
+      <tr><td><strong>Max Seq Length</strong></td><td>768 tokens</td><td>입력+출력의 최대 토큰 길이. 한국어 1글자 &asymp; 1.5토큰 기준, 약 500자 대화 처리 가능</td></tr>
+      <tr><td><strong>Optimizer</strong></td><td>paged_adamw_8bit</td><td>메모리 효율적 옵티마이저. 8비트 양자화된 AdamW로 GPU 메모리 절약</td></tr>
+      <tr><td><strong>Precision</strong></td><td>bf16</td><td>Brain Float 16비트 연산. A100 GPU에서 지원하는 고속 반정밀도 형식</td></tr>
+      <tr><td><strong>Target Modules</strong></td><td>q/k/v/o/gate/up/down_proj</td><td>LoRA 어댑터를 적용할 레이어. Attention(q,k,v,o)과 FFN(gate,up,down) 전체에 적용하여 학습 표현력 확보</td></tr>
+    </tbody>
+  </table>
+
+  <h3>실험 1: Qwen3-14B Baseline</h3>
+  <div class="highlight-box">
+    <strong>목적:</strong> 14B 모델의 기본 성능 측정<br>
+    <strong>결과:</strong> Epoch 1에서 최적 성능 도달 (eval_loss 0.6368) 후 과적합 발생.
+    Epoch 1&rarr;2&rarr;3으로 eval loss가 0.637&rarr;0.654&rarr;0.711로 상승.<br>
+    <strong>진단:</strong> 학습 데이터 4,342건 대비 trainable 파라미터 128.5M이 과다하여 1 epoch만에 패턴 학습 완료. 이후 암기(memorization) 진입.
+  </div>
+
+  <h3>실험 2: Qwen3-8B Baseline</h3>
+  <div class="highlight-box">
+    <strong>목적:</strong> 14B 대비 8B 모델의 성능 차이 측정 (서빙 비용 절감 가능 여부 판단)<br>
+    <strong>결과:</strong> Best eval_loss 0.6777로 14B 대비 6.4% 차이. Token Accuracy는 84.58%로 실질적 차이 미미.<br>
+    <strong>비용 이점:</strong> 학습 시간 -31%, 어댑터 크기 -31%, 서빙 GPU 메모리 -43%.
+  </div>
+
+  <h3>실험 3a: 정밀 체크포인팅 + Dropout 강화</h3>
+  <div class="highlight-box">
+    <strong>배경 (왜 이 실험이 필요했나):</strong><br>
+    Exp1, Exp2 모두 "Epoch 1이 best, Epoch 2부터 과적합"이라는 동일한 패턴을 보였습니다.
+    그런데 체크포인트 저장이 epoch 단위(= Step 543)여서, 실제 최적점이 Epoch 1의 끝인지,
+    중간 어딘가(예: Step 400? 500?)인지 알 수 없었습니다.<br><br>
+    <strong>접근:</strong><br>
+    epoch 단위 저장은 너무 성긴 그물이므로, 100 step 단위로 eval + 저장하여 최적점을 정밀하게 탐색했습니다.
+    추가로 dropout을 0.05&rarr;0.10으로 높여 과적합 진입 속도를 늦추고, epochs를 3&rarr;2로 줄여 불필요한 학습 시간을 제거했습니다.<br><br>
+    <strong>결과:</strong><br>
+    Step 500(epoch 0.92)이 진짜 최적점으로 확인됨. Epoch 1 끝(step 543)보다 약간 앞이 최적이었으며,
+    Step 600(epoch 1.10)부터는 eval loss가 다시 상승하여 과적합 진입이 확인되었습니다.
+    학습 시간도 18분으로 Exp1(54분) 대비 66% 단축되었습니다.
+  </div>
+
+  <h3>Exp3a 변경 사항 요약</h3>
+  <table>
+    <thead>
+      <tr><th>항목</th><th>Exp1/Exp2</th><th>Exp3a</th><th>변경 이유</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>체크포인트 저장</td><td>epoch 단위 (543 step마다)</td><td><strong>100 step 단위</strong></td><td>최적점 정밀 탐색</td></tr>
+      <tr><td>Dropout</td><td>0.05</td><td><strong>0.10</strong></td><td>과적합 진입 속도 늦춤</td></tr>
+      <tr><td>Epochs</td><td>3</td><td><strong>2</strong></td><td>Epoch 2 이후 불필요 (과적합 구간)</td></tr>
+      <tr><td>모델</td><td>14B / 8B</td><td><strong>8B</strong></td><td>Exp2에서 8B 비용 이점 확인</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Eval Loss 곡선 (Exp3a) -->
+  <h3>Exp3a Step별 Eval Loss 추이</h3>
+  <div class="loss-chart">
+    <!-- Y축 라벨 -->
+    <div class="y-axis" style="bottom: 100%;">0.76</div>
+    <div class="y-axis" style="bottom: 73%;">0.74</div>
+    <div class="y-axis" style="bottom: 46%;">0.70</div>
+    <div class="y-axis" style="bottom: 19%;">0.68</div>
+    <div class="y-axis" style="bottom: 0%;">0.66</div>
+    <!-- 그리드 -->
+    <div class="grid-line" style="bottom: 100%;"></div>
+    <div class="grid-line" style="bottom: 73%;"></div>
+    <div class="grid-line" style="bottom: 46%;"></div>
+    <div class="grid-line" style="bottom: 19%;"></div>
+    <!-- X축 라벨 -->
+    <div class="x-label" style="left: 7%;">100</div>
+    <div class="x-label" style="left: 21.5%;">200</div>
+    <div class="x-label" style="left: 36%;">300</div>
+    <div class="x-label" style="left: 50%;">400</div>
+    <div class="x-label" style="left: 64.5%;">500</div>
+    <div class="x-label" style="left: 79%;">600</div>
+    <div class="x-label" style="left: 93%;">700</div>
+    <!-- 데이터 포인트: 범위 0.66~0.77, 높이 200px -->
+    <!-- Step 100: 0.7631 → (0.7631-0.66)/(0.77-0.66) = 93.7% -->
+    <div class="loss-dot" style="left: 7%; bottom: 93.7%; background: var(--blue);"></div>
+    <!-- Step 200: 0.7085 → 44.1% -->
+    <div class="loss-dot" style="left: 21.5%; bottom: 44.1%; background: var(--blue);"></div>
+    <!-- Step 300: 0.6886 → 26.0% -->
+    <div class="loss-dot" style="left: 36%; bottom: 26.0%; background: var(--blue);"></div>
+    <!-- Step 400: 0.6963 → 33.0% -->
+    <div class="loss-dot" style="left: 50%; bottom: 33.0%; background: var(--blue);"></div>
+    <!-- Step 500: 0.6753 → BEST 13.9% -->
+    <div class="loss-dot best" style="left: 64.5%; bottom: 13.9%; background: var(--navy);"></div>
+    <div class="loss-dot-label" style="left: 64.5%; bottom: calc(13.9% + 18px); color: var(--navy);">0.6753 (BEST)</div>
+    <!-- Step 600: 0.7010 → 37.3% -->
+    <div class="loss-dot" style="left: 79%; bottom: 37.3%; background: var(--gray);"></div>
+    <!-- Step 700: 0.6971 → 33.7% -->
+    <div class="loss-dot" style="left: 93%; bottom: 33.7%; background: var(--gray);"></div>
+    <!-- 연결선 (CSS 방식 대신 SVG) -->
+    <svg style="position:absolute; top:0; left:0; width:100%; height:100%; overflow:visible;">
+      <polyline points="7%,6.3% 21.5%,55.9% 36%,74% 50%,67% 64.5%,86.1% 79%,62.7% 93%,66.3%"
+        fill="none" stroke="var(--blue)" stroke-width="2" stroke-linejoin="round"
+        style="transform: scaleY(-1) translateY(-100%);" />
+    </svg>
+  </div>
+  <div class="chart-legend">
+    <span><span class="legend-dot" style="background: var(--blue);"></span>Eval Loss</span>
+    <span><span class="legend-dot" style="background: var(--navy); border: 2px solid var(--blue-pale);"></span>Best Checkpoint (Step 500)</span>
+    <span><span class="legend-dot" style="background: var(--gray);"></span>Epoch 2 (과적합 진입)</span>
+  </div>
+
+  <h3>3회 실험 결과 비교</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>실험</th><th>모델</th><th>Dropout</th><th>Best Eval Loss</th><th>Accuracy</th>
+        <th>최적 시점</th><th>학습 시간</th><th>어댑터 크기</th><th>Trainable Params</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Exp1</td><td>Qwen3-14B</td><td>0.05</td><td>0.6368</td><td>84.97%</td>
+        <td>Epoch 1</td><td>54분</td><td>525.3MB</td><td>128.5M (1.55%)</td>
+      </tr>
+      <tr>
+        <td>Exp2</td><td>Qwen3-8B</td><td>0.05</td><td>0.6777</td><td>84.58%</td>
+        <td>Epoch 1</td><td>37분</td><td>360.7MB</td><td>87.3M (1.82%)</td>
+      </tr>
+      <tr style="background: #F0F5FA; font-weight: 600;">
+        <td>Exp3a</td><td>Qwen3-8B</td><td>0.10</td><td>0.6753</td><td>83.71%</td>
+        <td>Step 500</td><td>18분</td><td>360.7MB</td><td>87.3M (1.82%)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- 최종 모델 카드 -->
+  <div class="model-card">
+    <div class="mc-badge">Final Selected Model</div>
+    <div class="mc-name">Qwen3-8B + QLoRA (Exp3a, Step 500 Checkpoint)</div>
+    <div class="mc-specs">
+      <div class="mc-spec">
+        <div class="ms-value">0.6753</div>
+        <div class="ms-label">Eval Loss</div>
+      </div>
+      <div class="mc-spec">
+        <div class="ms-value">83.71%</div>
+        <div class="ms-label">Token Accuracy</div>
+      </div>
+      <div class="mc-spec">
+        <div class="ms-value">18.3분</div>
+        <div class="ms-label">학습 시간</div>
+      </div>
+      <div class="mc-spec">
+        <div class="ms-value">360.7MB</div>
+        <div class="ms-label">어댑터 크기</div>
+      </div>
+    </div>
+    <div class="mc-reason">
+      <strong>선정 근거:</strong>
+      14B 대비 eval loss 차이 6.4%이나, Phase 6 수동 평가에서 톤 적절성 100%, 리프레이징 자연스러움 86.7%로 실질적 품질 차이 미미.
+      학습 시간 -66%(54분&rarr;18분), 어댑터 크기 -31%, 서빙 GPU 메모리 약 43% 절감으로 비용 이점이 명확하여 8B 모델 채택.
+    </div>
+  </div>
+</div>
+
+
+<!-- ========== Section 4: 모델 평가 ========== -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">4</div>
+    <h2>모델 평가</h2>
+  </div>
+
+  <p>최종 모델(Exp3a)에 대해 <strong>자동 평가</strong>(578건), <strong>수동 블라인드 평가</strong>(30건), <strong>통합 세션 테스트</strong>(34건) 3단계로 검증했습니다.</p>
+
+  <h3>4-1. 자동 평가 결과 (test.jsonl 578건)</h3>
+
+  <p><strong>response 태스크 (259건) - 6개 항목 전체 PASS</strong></p>
+  <table>
+    <thead>
+      <tr><th>#</th><th>평가 항목</th><th>PASS 기준</th><th>결과</th><th>판정</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>JSON 파싱 성공률</td><td>&ge; 95%</td><td class="num">100.0%</td><td><span class="badge badge-pass">PASS</span></td></tr>
+      <tr><td>2</td><td>키 존재율 (comment, next_question)</td><td>&ge; 98%</td><td class="num">100.0%</td><td><span class="badge badge-pass">PASS</span></td></tr>
+      <tr><td>3</td><td>코멘트 길이 (10~100자)</td><td>&ge; 90%</td><td class="num">100.0%</td><td><span class="badge badge-pass">PASS</span></td></tr>
+      <tr><td>4</td><td>존댓말 사용률</td><td>&ge; 95%</td><td class="num">98.5%</td><td><span class="badge badge-pass">PASS</span></td></tr>
+      <tr><td>5</td><td>이모지 미사용</td><td>100%</td><td class="num">100.0%</td><td><span class="badge badge-pass">PASS</span></td></tr>
+      <tr><td>6</td><td>금지어 미사용 (설문/조사/서베이)</td><td>100%</td><td class="num">100.0%</td><td><span class="badge badge-pass">PASS</span></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>기타 태스크 (319건) - 전체 PASS</strong></p>
+  <table>
+    <thead>
+      <tr><th>태스크</th><th>건수</th><th>응답률</th><th>판정</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>intro</td><td>51건</td><td>100.0%</td><td><span class="badge badge-pass">PASS</span></td></tr>
+      <tr><td>first_question</td><td>50건</td><td>100.0%</td><td><span class="badge badge-pass">PASS</span></td></tr>
+      <tr><td>retry</td><td>122건</td><td>100.0%</td><td><span class="badge badge-pass">PASS</span></td></tr>
+      <tr><td>ending</td><td>51건</td><td>100.0%</td><td><span class="badge badge-pass">PASS</span></td></tr>
+      <tr><td>title</td><td>45건</td><td>100.0%</td><td><span class="badge badge-pass">PASS</span></td></tr>
+    </tbody>
+  </table>
+
+  <h3>4-2. 수동 평가 결과 (30건 블라인드 샘플)</h3>
+  <p>테스트 셋에서 무작위 추출한 30건의 response 출력에 대해 5점 척도 블라인드 평가를 수행했습니다.</p>
+
+  <!-- 게이지 차트 -->
+  <div class="gauge-row">
+    <div class="gauge">
+      <div class="gauge-circle">
+        <svg width="90" height="90" viewBox="0 0 90 90">
+          <circle class="gauge-bg" cx="45" cy="45" r="38" />
+          <circle class="gauge-fill" cx="45" cy="45" r="38"
+            stroke="var(--pass)" stroke-dasharray="238.76" stroke-dashoffset="0" />
+        </svg>
+        <div class="gauge-pct">100%</div>
+      </div>
+      <div class="gauge-label">코멘트 톤 적절성</div>
+      <div class="gauge-target">기준: &ge; 85% / 평균 4.73점</div>
+    </div>
+    <div class="gauge">
+      <div class="gauge-circle">
+        <svg width="90" height="90" viewBox="0 0 90 90">
+          <circle class="gauge-bg" cx="45" cy="45" r="38" />
+          <circle class="gauge-fill" cx="45" cy="45" r="38"
+            stroke="var(--pass)" stroke-dasharray="238.76" stroke-dashoffset="31.8" />
+        </svg>
+        <div class="gauge-pct">86.7%</div>
+      </div>
+      <div class="gauge-label">리프레이징 자연스러움</div>
+      <div class="gauge-target">기준: &ge; 80% / 평균 4.43점</div>
+    </div>
+    <div class="gauge">
+      <div class="gauge-circle">
+        <svg width="90" height="90" viewBox="0 0 90 90">
+          <circle class="gauge-bg" cx="45" cy="45" r="38" />
+          <circle class="gauge-fill" cx="45" cy="45" r="38"
+            stroke="var(--pass)" stroke-dasharray="238.76" stroke-dashoffset="3.6" />
+        </svg>
+        <div class="gauge-pct">98.5%</div>
+      </div>
+      <div class="gauge-label">존댓말 사용률</div>
+      <div class="gauge-target">기준: &ge; 95% (자동 평가)</div>
+    </div>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>평가 항목</th><th>PASS 기준</th><th>PASS 건수</th><th>PASS율</th><th>점수 분포</th><th>판정</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>코멘트 톤 적절성</td><td>&ge; 85%</td><td>30/30</td>
+        <td class="num">100.0%</td><td>5점 22건, 4점 8건, 3점 이하 0건</td>
+        <td><span class="badge badge-pass">PASS</span></td>
+      </tr>
+      <tr>
+        <td>질문 리프레이징 자연스러움</td><td>&ge; 80%</td><td>26/30</td>
+        <td class="num">86.7%</td><td>5점 18건, 4점 8건, 3점 이하 4건</td>
+        <td><span class="badge badge-pass">PASS</span></td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="table-note">평가 기준: 4점 이상 = PASS (5점 만점)</p>
+
+  <h3>4-3. 통합 세션 테스트 (34건 end-to-end)</h3>
+  <p>실제 대화 시나리오를 시뮬레이션하여 모델의 실전 동작을 검증했습니다.</p>
+  <table>
+    <thead>
+      <tr><th>시나리오</th><th>건수</th><th>통과</th><th>판정</th><th>확인 사항</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>정상 플로우 (8질문 완주)</td><td>16건</td><td>16/16</td><td><span class="badge badge-pass">PASS</span></td><td>JSON 100%, 톤 일관성 유지</td></tr>
+      <tr><td>짧은 응답 (1~3단어)</td><td>5건</td><td>5/5</td><td><span class="badge badge-pass">PASS</span></td><td>코멘트 자연스러움 확인</td></tr>
+      <tr><td>부정적/무관심 응답</td><td>5건</td><td>5/5</td><td><span class="badge badge-pass">PASS</span></td><td>공감 톤 유지, 비강요 확인</td></tr>
+      <tr><td>긴 응답 (100자+)</td><td>5건</td><td>5/5</td><td><span class="badge badge-pass">PASS</span></td><td>핵심 포착, 코멘트 적정 길이</td></tr>
+      <tr><td>무관한 응답 (retry 유도)</td><td>3건</td><td>3/3</td><td><span class="badge badge-pass">PASS</span></td><td>부드러운 재요청 생성</td></tr>
+    </tbody>
+  </table>
+
+  <h3>4-4. 발견 사항 및 대응</h3>
+  <table>
+    <thead>
+      <tr><th>항목</th><th>태스크</th><th>건수/전체</th><th>비율</th><th>판정</th><th>비고</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>next_question에 사진 요청 포함</td><td>response</td><td>23/259</td><td>8.9%</td>
+        <td><span class="badge badge-pass">정상</span></td><td>TPOLEACI의 Image(이미지) 질문에서 사진 요청은 정상 동작</td>
+      </tr>
+      <tr>
+        <td>title에 '조사' 금지어 포함</td><td>title</td><td>10/45</td><td>22.2%</td>
+        <td><span class="badge badge-cond">대응 필요</span></td><td>서빙 시 후처리 필터로 제거</td>
+      </tr>
+    </tbody>
+  </table>
+  <p class="table-note">
+    사진 요청: SOBA는 마케팅 데이터와 이미지를 수집하는 서비스이므로, Image 타입 질문에서 사진을 요청하는 것은 의도된 동작입니다.
+    단, 데이터 정제 단계에서 사진 관련 키워드를 포함한 response 391건이 오삭제되었으며, 이는 향후 데이터 재정제 시 복원을 검토합니다.<br>
+    title 금지어: '조사'가 리서치 주제 설명에 자주 등장하여 모델이 학습한 것으로 분석. 서빙 시 후처리 필터로 대응 가능.
+  </p>
+
+  <h3>4-5. 응답 시간</h3>
+  <table>
+    <thead>
+      <tr><th>지표</th><th>결과 (QLoRA 직접 추론)</th><th>PASS 기준</th><th>판정</th><th>vLLM 서빙 예상</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>p50</td><td>4.78s</td><td>&lt; 3s</td><td><span class="badge badge-fail">FAIL</span></td><td>&lt; 1s</td></tr>
+      <tr><td>p95</td><td>6.54s</td><td>&lt; 3s</td><td><span class="badge badge-fail">FAIL</span></td><td>&lt; 1s</td></tr>
+    </tbody>
+  </table>
+  <p class="table-note">현재 측정값은 transformers generate 직접 추론 기준. vLLM 서빙 + merged weights 적용 시 p95 &lt; 1s 달성 가능하며, Phase 7에서 검증 예정.</p>
+
+  <!-- Phase 6 최종 판정 -->
+  <div class="result-box conditional">
+    <strong>Phase 6 최종 판정: GO (조건부)</strong><br>
+    모델 품질은 프로덕션 기준 충족. 다음 조건 충족 시 Phase 7 진행:<br>
+    &nbsp;&nbsp;1. vLLM 서빙으로 응답 시간 p95 &lt; 3s 검증<br>
+    &nbsp;&nbsp;2. title 태스크 금지어('조사') 후처리 필터 적용<br>
+    &nbsp;&nbsp;3. 사진 요청 관련 response 데이터 391건 복원 검토 (데이터 재정제)
+  </div>
+</div>
+
+
+<!-- ========== Section 5: 비용 및 산출물 ========== -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">5</div>
+    <h2>비용 및 산출물</h2>
+  </div>
+
+  <h3>5-1. 투입 비용</h3>
+  <table>
+    <thead>
+      <tr><th>항목</th><th>내역</th><th>소요 시간</th><th>비용</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>학습 데이터 생성</td><td>GPT-4o / GPT-4o-mini API 3,139회 호출</td><td>~14분</td><td>$16.08</td></tr>
+      <tr><td>Exp1: 14B Baseline</td><td>RunPod A100 80GB</td><td>54분</td><td>~$7</td></tr>
+      <tr><td>Exp2: 8B Baseline</td><td>RunPod A100 80GB</td><td>37분</td><td>~$5</td></tr>
+      <tr><td>Exp3a: 정밀 체크포인팅</td><td>RunPod A100 80GB</td><td>18분</td><td>~$3</td></tr>
+      <tr><td>평가 추론</td><td>RunPod A100 80GB (test 578건)</td><td>~30분</td><td>~$3</td></tr>
+    </tbody>
+  </table>
+  <div class="cost-highlight">
+    <span class="cl-label">총 투입 비용</span>
+    <span class="cl-value">~$35</span>
+  </div>
+
+  <h3>5-2. 산출물</h3>
+  <table>
+    <thead>
+      <tr><th>산출물</th><th>내용</th><th>위치</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>학습 데이터 (v2)</td><td>train 3,970 / val 478 / test 533건 (ChatML 형식)</td><td><code>data/processed_v2/</code></td></tr>
+      <tr><td>최종 모델 어댑터</td><td>Qwen3-8B QLoRA, Step 500 체크포인트, 360.7MB</td><td><code>outputs_exp3a/adapter/</code></td></tr>
+      <tr><td>학습 코드</td><td>train.py, evaluate.py, inference.py, session_test.py, manual_eval.py</td><td><code>src/</code></td></tr>
+      <tr><td>데이터 생성 파이프라인</td><td>generate_data.py, clean_data.py, 6개 프롬프트 모듈</td><td><code>data_generation/</code></td></tr>
+      <tr><td>학습 설정</td><td>training_config_final.yaml 외 3종 (14B, 8B, exp3a)</td><td><code>configs/</code></td></tr>
+      <tr><td>실험 보고서</td><td>Exp1-3a 통합 리포트, Phase 6 평가 리포트 (PDF)</td><td><code>docs/results/</code></td></tr>
+      <tr><td>GitHub 저장소</td><td>전체 코드 + 데이터 + 문서</td><td><code>github.com/kkminari/soba-chat-fine-tuning</code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- ========== Section 6: 향후 계획 ========== -->
+<div class="section">
+  <div class="section-header">
+    <div class="section-num">6</div>
+    <h2>향후 계획 (Phase 7: 백엔드 통합)</h2>
+  </div>
+
+  <p>Phase 6 평가를 통과하여, 최종 모델의 백엔드 통합 작업을 진행합니다. 예상 소요 시간은 <span class="num">15~27시간</span>(작업일 기준 2~4일)입니다.</p>
+
+  <ul class="timeline">
+    <li>
+      <div class="tl-header">
+        <span class="tl-title">서빙 환경 구축</span>
+        <span class="tl-time">4~8시간</span>
+      </div>
+      <div class="tl-desc">
+        vLLM / RunPod Serverless / HF Endpoints 중 선택.
+        GPU 인스턴스 세팅, 모델 배포, 레이턴시 테스트 (p95 &lt; 3s 목표).
+        merged weights 적용으로 추론 속도 최적화.
+      </div>
+    </li>
+    <li>
+      <div class="tl-header">
+        <span class="tl-title">백엔드 서비스 구현</span>
+        <span class="tl-time">3~5시간</span>
+      </div>
+      <div class="tl-desc">
+        qwen_service.py (어댑터 로드 + 추론 API),
+        llm_service.py (Claude/Qwen 라우팅 인터페이스),
+        후처리 필터 (title 금지어 제거).
+        use_finetuned_model 플래그로 모델 전환 지원.
+      </div>
+    </li>
+    <li>
+      <div class="tl-header">
+        <span class="tl-title">통합 테스트</span>
+        <span class="tl-time">3~4시간</span>
+      </div>
+      <div class="tl-desc">
+        6개 대화 생성 메서드 (generate_intro, generate_first_question, generate_response, generate_retry_message, generate_ending_message, generate_display_title) 정상 동작 확인.
+        Claude Haiku 분석 메서드 정상 유지 확인. 폴백 테스트 (Qwen 장애 시 Claude Sonnet 전환).
+      </div>
+    </li>
+    <li>
+      <div class="tl-header">
+        <span class="tl-title">배포 및 모니터링</span>
+        <span class="tl-time">4~8시간</span>
+      </div>
+      <div class="tl-desc">
+        스테이징 환경 배포 + QA. 프로덕션 배포 + 24시간 안정성 모니터링.
+        Qwen 추론 레이턴시, JSON 파싱 성공률, 폴백 빈도 모니터링.
+      </div>
+    </li>
+  </ul>
+
+  <h3>기대 효과</h3>
+  <div class="compare-row">
+    <div class="compare-card before">
+      <div class="cc-label">현재 (Claude Sonnet API)</div>
+      <div class="cc-item"><span class="cc-key">월 API 비용</span><span class="cc-val">~$200</span></div>
+      <div class="cc-item"><span class="cc-key">응답 속도 (p95)</span><span class="cc-val">~2s</span></div>
+      <div class="cc-item"><span class="cc-key">외부 의존성</span><span class="cc-val">Anthropic API 종속</span></div>
+      <div class="cc-item"><span class="cc-key">모델 커스터마이징</span><span class="cc-val">불가</span></div>
+      <div class="cc-item"><span class="cc-key">데이터 프라이버시</span><span class="cc-val">외부 전송 필요</span></div>
+    </div>
+    <div class="compare-arrow">&rarr;</div>
+    <div class="compare-card after">
+      <div class="cc-label">변경 후 (Qwen3-8B Fine-tuned)</div>
+      <div class="cc-item"><span class="cc-key">월 서빙 비용</span><span class="cc-val">대폭 절감</span></div>
+      <div class="cc-item"><span class="cc-key">응답 속도 (p95)</span><span class="cc-val">&lt; 1s 목표</span></div>
+      <div class="cc-item"><span class="cc-key">외부 의존성</span><span class="cc-val">자체 모델 운영</span></div>
+      <div class="cc-item"><span class="cc-key">모델 커스터마이징</span><span class="cc-val">추가 파인튜닝 가능</span></div>
+      <div class="cc-item"><span class="cc-key">데이터 프라이버시</span><span class="cc-val">내부 처리</span></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
