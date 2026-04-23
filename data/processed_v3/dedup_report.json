@@ -1,0 +1,120 @@
+{
+  "stages": [
+    {
+      "name": "load",
+      "count": 5954
+    },
+    {
+      "name": "exact_dedup",
+      "stage": "exact",
+      "removed": 210,
+      "kept": 5744
+    },
+    {
+      "name": "near_dup",
+      "intro": {
+        "method": "minhash",
+        "ngram": 5,
+        "removed": 0,
+        "kept": 400
+      },
+      "first_question": {
+        "method": "minhash",
+        "ngram": 5,
+        "removed": 0,
+        "kept": 400
+      },
+      "retry": {
+        "method": "minhash",
+        "ngram": 3,
+        "removed": 2,
+        "kept": 1197
+      },
+      "ending": {
+        "method": "minhash",
+        "ngram": 5,
+        "removed": 0,
+        "kept": 400
+      },
+      "title": {
+        "method": "levenshtein",
+        "removed": 141,
+        "kept": 450
+      },
+      "response": {
+        "method": "minhash",
+        "ngram": 5,
+        "removed": 0,
+        "kept": 2754
+      }
+    },
+    {
+      "name": "embedding_dedup",
+      "per_task": {
+        "intro": {
+          "removed": 0,
+          "kept": 400
+        },
+        "first_question": {
+          "removed": 6,
+          "kept": 394
+        },
+        "retry": {
+          "removed": 13,
+          "kept": 1184
+        },
+        "ending": {
+          "removed": 0,
+          "kept": 400
+        },
+        "title": {
+          "removed": 1,
+          "kept": 449
+        },
+        "response": {
+          "removed": 0,
+          "kept": 2754
+        }
+      }
+    },
+    {
+      "name": "v3_v2_xsim",
+      "removed": 44,
+      "avg_xsim_by_task": {
+        "intro": 0.6552394032478333,
+        "first_question": 0.6791276335716248,
+        "retry": 0.6564301252365112,
+        "ending": 0.6367565393447876,
+        "title": 0.6936725974082947,
+        "response": 0.6191684007644653
+      },
+      "max_xsim_by_task": {
+        "intro": 0.8619139790534973,
+        "first_question": 0.9430959224700928,
+        "retry": 0.9582173824310303,
+        "ending": 0.8020293116569519,
+        "title": 1.000001072883606,
+        "response": 0.8962920904159546
+      }
+    },
+    {
+      "name": "split",
+      "train": 4402,
+      "val": 569,
+      "test": 566,
+      "leakage_train_val": 0,
+      "leakage_train_test": 0,
+      "leakage_val_test": 0,
+      "train_groups": 93,
+      "val_groups": 12,
+      "test_groups": 12
+    }
+  ],
+  "input": "data/processed_v3/raw_all.jsonl",
+  "final": {
+    "train": 4402,
+    "val": 569,
+    "test": 566,
+    "total": 5537
+  }
+}

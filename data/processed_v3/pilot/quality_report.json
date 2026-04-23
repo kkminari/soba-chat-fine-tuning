@@ -1,0 +1,53 @@
+{
+  "total": 215,
+  "by_task": {
+    "intro": 30,
+    "first_question": 30,
+    "retry": 30,
+    "ending": 30,
+    "title": 60,
+    "response": 35
+  },
+  "pilot_mode": true,
+  "starting_phrase_top1_pct": {
+    "intro": 0.26666666666666666,
+    "first_question": 0.3333333333333333,
+    "retry": 0.3,
+    "ending": 0.2,
+    "title": 0.1,
+    "response": 0.05714285714285714
+  },
+  "first_3words_unique_pct": {
+    "intro": 0.8666666666666667,
+    "first_question": 0.7333333333333333,
+    "retry": 0.7,
+    "ending": 0.5666666666666667,
+    "title": 1.0,
+    "response": 1.0
+  },
+  "combo_usage": {
+    "variation_matrix_combos_used": 15,
+    "variation_matrix_samples": 35,
+    "persona_occasion_combos_used": 40,
+    "persona_occasion_std_ratio": 0.43370690169968035
+  },
+  "avg_pairwise_cosine_per_seed": 0.279556804895401,
+  "go_status": "FAIL",
+  "fail_reasons": [
+    "persona_occasion_std_ratio=0.434 > 0.3"
+  ],
+  "thresholds": {
+    "starting_phrase_top1_pct": 0.35,
+    "first_3words_unique_pct": 0.3,
+    "leakage_base_seed_id": 0,
+    "avg_pairwise_cosine_per_seed": 0.85,
+    "variation_matrix_combos_used": 10,
+    "persona_occasion_combos_used": 20,
+    "persona_occasion_balance_std_ratio": 0.3,
+    "task_ratio_edge": 0.02,
+    "v3_v2_avg_xsim": 0.8,
+    "v3_v2_max_xsim": 0.95,
+    "human_good_pct": 0.8,
+    "human_bad_pct": 0.05
+  }
+}

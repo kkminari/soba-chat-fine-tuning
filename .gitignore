@@ -28,3 +28,4 @@ src/outputs_exp3a/
 
 # 학습/평가 로그
 *.log
+.venv/

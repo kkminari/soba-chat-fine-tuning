@@ -1,0 +1,116 @@
+{
+  "total": 5537,
+  "by_task": {
+    "intro": 400,
+    "first_question": 394,
+    "retry": 1183,
+    "ending": 400,
+    "title": 406,
+    "response": 2754
+  },
+  "pilot_mode": false,
+  "starting_phrase_top1_pct": {
+    "intro": 0.1425,
+    "first_question": 0.4035532994923858,
+    "retry": 0.21639898562975485,
+    "ending": 0.2025,
+    "title": 0.0665024630541872,
+    "response": 0.04357298474945534
+  },
+  "first_3words_unique_pct": {
+    "intro": 0.6325,
+    "first_question": 0.5329949238578681,
+    "retry": 0.4319526627218935,
+    "ending": 0.275,
+    "title": 0.9950738916256158,
+    "response": 0.9074074074074074
+  },
+  "leakage": {
+    "train_val": 0,
+    "train_test": 0,
+    "val_test": 0,
+    "group_counts": {
+      "train": 93,
+      "val": 12,
+      "test": 12
+    }
+  },
+  "task_ratio": {
+    "train": {
+      "intro": 0.07223989095865516,
+      "first_question": 0.07110404361653794,
+      "retry": 0.2133121308496138,
+      "ending": 0.07223989095865516,
+      "title": 0.07383007723761927,
+      "response": 0.4972739663789187
+    },
+    "val": {
+      "intro": 0.07205623901581722,
+      "first_question": 0.07205623901581722,
+      "retry": 0.21441124780316345,
+      "ending": 0.07205623901581722,
+      "title": 0.07205623901581722,
+      "response": 0.4973637961335677
+    },
+    "test": {
+      "intro": 0.07243816254416961,
+      "first_question": 0.0706713780918728,
+      "retry": 0.21554770318021202,
+      "ending": 0.07243816254416961,
+      "title": 0.0706713780918728,
+      "response": 0.49823321554770317
+    },
+    "max_edge": 0.0031586991457464714
+  },
+  "combo_usage": {
+    "variation_matrix_combos_used": 16,
+    "variation_matrix_samples": 2754,
+    "persona_occasion_combos_used": 40,
+    "persona_occasion_std_ratio": 0.017238858297782444
+  },
+  "avg_pairwise_cosine_per_seed": 0.3231696073825543,
+  "v3_v2_xsim": {
+    "avg_by_task": {
+      "intro": 0.6552394032478333,
+      "first_question": 0.6791276335716248,
+      "retry": 0.6564301252365112,
+      "ending": 0.6367565393447876,
+      "title": 0.6936725974082947,
+      "response": 0.6191684007644653
+    },
+    "max_by_task": {
+      "intro": 0.8619139790534973,
+      "first_question": 0.9430959224700928,
+      "retry": 0.9582173824310303,
+      "ending": 0.8020293116569519,
+      "title": 1.000001072883606,
+      "response": 0.8962920904159546
+    },
+    "overall_avg": 0.6567324499289194,
+    "overall_max": 1.000001072883606
+  },
+  "go_status": "FAIL",
+  "fail_reasons": [
+    "starting_phrase_top1[first_question]=40.36% > 20.00%",
+    "starting_phrase_top1[retry]=21.64% > 20.00%",
+    "starting_phrase_top1[ending]=20.25% > 20.00%",
+    "first_3words_unique[retry]=43.20% < 50.00%",
+    "first_3words_unique[ending]=27.50% < 50.00%",
+    "variation_matrix_combos_used=16 < 30",
+    "v3_v2_max_xsim=1.000 > 0.95"
+  ],
+  "thresholds": {
+    "starting_phrase_top1_pct": 0.2,
+    "first_3words_unique_pct": 0.5,
+    "leakage_base_seed_id": 0,
+    "avg_pairwise_cosine_per_seed": 0.85,
+    "variation_matrix_combos_used": 30,
+    "persona_occasion_combos_used": 35,
+    "persona_occasion_balance_std_ratio": 0.3,
+    "task_ratio_edge": 0.02,
+    "v3_v2_avg_xsim": 0.8,
+    "v3_v2_max_xsim": 0.95,
+    "human_good_pct": 0.8,
+    "human_bad_pct": 0.05
+  }
+}
