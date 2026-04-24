@@ -121,10 +121,14 @@ def evaluate_rephrasing(gen_next_q: str, exp_next_q: str, original_next_q: str) 
             reasons.append("의미 약간 이탈")
 
     # 부적절한 요청 체크 (사진, 이미지 등)
+    # 원본/기대 질문에도 해당 단어가 있으면 정상 맥락이므로 감점 제외
     inappropriate = ["사진", "보여주", "보내주", "이미지", "촬영"]
-    if any(w in gen_next_q for w in inappropriate):
-        score -= 2
-        reasons.append("부적절 요청(사진 등)")
+    context_text = f"{exp_next_q} {original_next_q}"
+    for w in inappropriate:
+        if w in gen_next_q and w not in context_text:
+            score -= 2
+            reasons.append("부적절 요청(사진 등)")
+            break
 
     # 금지어 체크
     forbidden = ["설문", "조사", "서베이"]
@@ -139,12 +143,12 @@ def evaluate_rephrasing(gen_next_q: str, exp_next_q: str, original_next_q: str) 
 
 def main():
     # 샘플 로드
-    samples_path = Path(__file__).parent.parent / "outputs" / "manual_eval_samples.json"
+    samples_path = Path(__file__).parent.parent / "outputs_v3" / "manual_eval_samples.json"
     with open(samples_path, "r", encoding="utf-8") as f:
         samples = json.load(f)
 
     # 원본 test 데이터 (원래 다음 질문 정보)
-    test_path = Path(__file__).parent.parent / "data" / "processed" / "test.jsonl"
+    test_path = Path(__file__).parent.parent / "data" / "processed_v3" / "test.jsonl"
     with open(test_path, "r", encoding="utf-8") as f:
         test_data = [json.loads(l) for l in f if json.loads(l)["task_type"] == "response"]
 
@@ -235,7 +239,8 @@ def main():
     print(f"  점수 분포: {dict(sorted(((s, rephrase_scores.count(s)) for s in set(rephrase_scores))))}")
 
     # 결과 저장
-    output_dir = Path(__file__).parent.parent / "outputs"
+    output_dir = Path(__file__).parent.parent / "outputs_v3"
+    output_dir.mkdir(exist_ok=True)
 
     summary = {
         "tone": {

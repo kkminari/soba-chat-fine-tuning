@@ -20,32 +20,15 @@ def main():
     random.seed(SEED)
 
     # test.jsonl 로드 (컨텍스트 정보 포함)
-    test_path = Path(__file__).parent.parent / "data" / "processed" / "test.jsonl"
+    test_path = Path(__file__).parent.parent / "data" / "processed_v3" / "test.jsonl"
     with open(test_path, "r", encoding="utf-8") as f:
         test_data = [json.loads(l) for l in f]
 
     # eval_predictions.jsonl 로드
-    pred_path = Path(__file__).parent.parent / "outputs" / "eval_predictions.jsonl"
+    pred_path = Path(__file__).parent.parent / "outputs_v3" / "eval_predictions.jsonl"
     with open(pred_path, "r", encoding="utf-8") as f:
         predictions = [json.loads(l) for l in f]
 
-    # response 태스크만 필터 (test_data와 predictions 인덱스 매칭)
-    response_items = []
-    resp_idx = 0
-    for i, item in enumerate(test_data):
-        if item["task_type"] == "response":
-            pred = predictions[resp_idx]  # predictions는 태스크 순서대로 저장됨
-            assert pred["task"] == "response", f"Mismatch at index {i}"
-            user_msg = item["messages"][1]["content"]
-            response_items.append({
-                "index": resp_idx,
-                "user_input": user_msg,
-                "expected": pred["expected"],
-                "generated": pred["generated"],
-            })
-            resp_idx += 1
-
-    # 실제로는 predictions가 태스크별 순서가 아닐 수 있으므로 직접 매칭
     # predictions에서 response만 추출하고, test_data의 response와 순서 매칭
     response_preds = [p for p in predictions if p["task"] == "response"]
     response_tests = [t for t in test_data if t["task_type"] == "response"]
@@ -68,7 +51,8 @@ def main():
     sampled.sort(key=lambda x: x["index"])
 
     # --- CSV 평가 시트 생성 ---
-    output_dir = Path(__file__).parent.parent / "outputs"
+    output_dir = Path(__file__).parent.parent / "outputs_v3"
+    output_dir.mkdir(exist_ok=True)
     csv_path = output_dir / "manual_eval_sheet.csv"
 
     with open(csv_path, "w", encoding="utf-8-sig", newline="") as f:

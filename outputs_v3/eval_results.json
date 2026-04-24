@@ -1,0 +1,31 @@
+{
+  "response": {
+    "json_parse_rate": 100.0,
+    "keys_present_rate": 100.0,
+    "comment_length_ok": 100.0,
+    "honorific_rate": 98.93617021276596,
+    "no_emoji_rate": 100.0,
+    "no_survey_word_rate": 100.0,
+    "total_evaluated": 282
+  },
+  "intro": {
+    "non_empty_rate": 100.0,
+    "total": 41
+  },
+  "first_question": {
+    "non_empty_rate": 100.0,
+    "total": 40
+  },
+  "retry": {
+    "non_empty_rate": 100.0,
+    "total": 122
+  },
+  "ending": {
+    "non_empty_rate": 100.0,
+    "total": 41
+  },
+  "title": {
+    "non_empty_rate": 100.0,
+    "total": 40
+  }
+}

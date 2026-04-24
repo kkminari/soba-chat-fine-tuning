@@ -25,6 +25,8 @@ data/processed/chatml_clean.jsonl
 outputs_v2/
 src/outputs_exp2/
 src/outputs_exp3a/
+src/outputs_v3/
+src/outputs_v3_pilot/
 
 # 학습/평가 로그
 *.log
